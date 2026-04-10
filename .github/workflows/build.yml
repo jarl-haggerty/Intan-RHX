@@ -17,26 +17,29 @@ jobs:
     - name: Install JOM
       run: |
         curl http://download.qt.io/official_releases/jom/jom.zip -L --output jom.zip
-        powershell -Command "Expand-Archive -DestinationPath C:\jom jom.zip"
-        echo C:\jom >> %GITHUB_PATH%
+        Expand-Archive -DestinationPath C:\jom jom.zip
+        echo C:\jom >> $env:GITHUB_PATH
 
     - name: JOM Test
       run: |
         dir C:\jom
-        echo %PATH%
+        echo $env:PATH
         jom --help
 
     - name: Install QT
       run: |
         curl https://download.qt.io/official_releases/online_installers/qt-online-installer-windows-x64-online.exe -L --output qt-online-installer-windows-x64-online.exe
-        set QT_INSTALLER_JWT_TOKEN=${{ secrets.QT_INSTALLER_JWT_TOKEN }}
+        $env:QT_INSTALLER_JWT_TOKEN=${{ secrets.QT_INSTALLER_JWT_TOKEN }}
         qt-online-installer-windows-x64-4.11.0.exe --root C:\Qt --auto-answer telemetry-question=No --accept-licenses --accept-obligations --confirm-command install qt6-msvc2022-essentials-dev
 
-        powershell -Command "(Resolve-Path C:\Qt\*\msvc2022_64).Path" > qt-root
-        set /p QT_ROOT=<qt-root
-        echo QT_ROOT=%QT_ROOT% >> %GITHUB_ENV%
+        $qt_root = Resolve-Path C:\Qt\*\msvc2022_64
+        echo QT_ROOT=$qt_root >> $env:GITHUB_ENV
+        echo "$qt_root\bin" >> $env:GITHUB_PATH
 
-        echo %QT_ROOT%\bin >> %GITHUB_PATH%
+    - name: QT Test
+      run: |
+        echo $env:QT_ROOT
+        qmake --help
         
     - name: Generate
       run: qmake
@@ -49,10 +52,10 @@ jobs:
         copy kernel.cl dist
         copy release\*.exe dist
         copy libraries\Windows\*.dll dist
-        copy %QT_ROOT%\bin\*.dll dist
+        copy "${env:QT_ROOT}\bin\*.dll" dist
 
         mkdir dist\platforms
-        copy %QT_ROOT%\plugins\platforms dist\platforms
+        copy "${env:QT_ROOT}\plugins\platforms\*.dll" dist\platforms
   
     - name: Upload Distribution
       uses: actions/upload-artifact@v4
