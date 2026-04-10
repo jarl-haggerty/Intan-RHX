@@ -112,56 +112,44 @@ void TCPDataOutputThread::run()
                             waveformArrayIndex += sizeof(timestamp);
 
                             // Grab digital in word and digital out word
-                            uint16_t* boardDigitalInWaveform = waveformFifo->getDigitalWaveformPointer("DIGITAL-IN-WORD");
-                            uint16_t digitalInWord = waveformFifo->getDigitalData(WaveformFifo::ReaderTCP, boardDigitalInWaveform, i);
+                            uint16_t digitalInWord = waveformFifo->getDigitalData(WaveformFifo::ReaderTCP, cachedDigitalInWaveform, i);
                             bool digitalInWordSent = false;
-                            uint16_t* boardDigitalOutWaveform = waveformFifo->getDigitalWaveformPointer("DIGITAL-OUT-WORD");
-                            uint16_t digitalOutWord = waveformFifo->getDigitalData(WaveformFifo::ReaderTCP, boardDigitalOutWaveform, i);
+                            uint16_t digitalOutWord = waveformFifo->getDigitalData(WaveformFifo::ReaderTCP, cachedDigitalOutWaveform, i);
                             bool digitalOutWordSent = false;
 
                             int stimChannelIndex = 0;
 
-                            for (int channel = 0; channel < enabledChannelNames.size(); ++channel) {
+                            for (int channel = 0; channel < (int) channelTCPInfos.size(); ++channel) {
 
-                                Channel *thisChannel = signalSources->channelByName(enabledChannelNames[channel]);
+                                const ChannelTCPInfo& info = channelTCPInfos[channel];
+                                Channel *thisChannel = info.channel;
 
                                 // If this channel is an amplifier signal, read all enabled bands
                                 if (thisChannel->getSignalType() == AmplifierSignal) {
 
                                     if (thisChannel->getOutputToTcp()) {
-                                        std::string waveName = QString(enabledChannelNames[channel] + "|WIDE").toStdString();
-                                        if (!waveformFifo->gpuWaveformPresent(waveName)) continue; // Error happened here - we should flag that there was a problem.
-                                        GpuWaveformAddress waveformAddress = waveformFifo->getGpuWaveformAddress(waveName);
-                                        if (waveformAddress.waveformIndex < 0) continue; // Error happened here - we should flag that there was a problem.
-                                        uint16_t thisSample = waveformFifo->getGpuAmplifierDataRaw(WaveformFifo::ReaderTCP, waveformAddress, i);
+                                        if (info.wideAddress.waveformIndex < 0) continue; // Error happened here - we should flag that there was a problem.
+                                        uint16_t thisSample = waveformFifo->getGpuAmplifierDataRaw(WaveformFifo::ReaderTCP, info.wideAddress, i);
                                         waveformArray.replace(waveformArrayIndex, sizeof(thisSample), (const char*)(&thisSample), sizeof(thisSample));
                                         waveformArrayIndex += sizeof(thisSample);
                                     }
 
                                     if (thisChannel->getOutputToTcpLow()) {
-                                        std::string waveName = QString(enabledChannelNames[channel] + "|LOW").toStdString();
-                                        if (!waveformFifo->gpuWaveformPresent(waveName)) continue; // Error happened here - we should flag that there was a problem.
-                                        GpuWaveformAddress waveformAddress = waveformFifo->getGpuWaveformAddress(waveName);
-                                        if (waveformAddress.waveformIndex < 0) continue; // Error happened here - we should flag that there was a problem.
-                                        uint16_t thisSample = waveformFifo->getGpuAmplifierDataRaw(WaveformFifo::ReaderTCP, waveformAddress, i);
+                                        if (info.lowAddress.waveformIndex < 0) continue; // Error happened here - we should flag that there was a problem.
+                                        uint16_t thisSample = waveformFifo->getGpuAmplifierDataRaw(WaveformFifo::ReaderTCP, info.lowAddress, i);
                                         waveformArray.replace(waveformArrayIndex, sizeof(thisSample), (const char*)(&thisSample), sizeof(thisSample));
                                         waveformArrayIndex += sizeof(thisSample);
                                     }
 
                                     if (thisChannel->getOutputToTcpHigh()) {
-                                        std::string waveName = QString(enabledChannelNames[channel] + "|HIGH").toStdString();
-                                        if (!waveformFifo->gpuWaveformPresent(waveName)) continue; // Error happened here - we should flag that there was a problem.
-                                        GpuWaveformAddress waveformAddress = waveformFifo->getGpuWaveformAddress(waveName);
-                                        if (waveformAddress.waveformIndex < 0) continue; // Error happened here - we should flag that there was a problem.
-                                        uint16_t thisSample = waveformFifo->getGpuAmplifierDataRaw(WaveformFifo::ReaderTCP, waveformAddress, i);
+                                        if (info.highAddress.waveformIndex < 0) continue; // Error happened here - we should flag that there was a problem.
+                                        uint16_t thisSample = waveformFifo->getGpuAmplifierDataRaw(WaveformFifo::ReaderTCP, info.highAddress, i);
                                         waveformArray.replace(waveformArrayIndex, sizeof(thisSample), (const char*)(&thisSample), sizeof(thisSample));
                                         waveformArrayIndex += sizeof(thisSample);
                                     }
 
                                     if (thisChannel->getOutputToTcpSpike()) {
-                                        std::string waveName = QString(enabledChannelNames[channel] + "|SPK").toStdString();
-                                        uint16_t* spikeWaveform = waveformFifo->getDigitalWaveformPointer(waveName);
-                                        uint8_t spikeId = (uint8_t) waveformFifo->getDigitalData(WaveformFifo::ReaderTCP, spikeWaveform, i);
+                                        uint8_t spikeId = (uint8_t) waveformFifo->getDigitalData(WaveformFifo::ReaderTCP, info.spikeWaveform, i);
                                         if (spikeId != SpikeIdNoSpike) {
                                             // Create 14-byte chunk with magic num, native name, timestamp, and spike ID
                                             char nativeName[5];
@@ -183,18 +171,14 @@ void TCPDataOutputThread::run()
                                     }
 
                                     if (thisChannel->getOutputToTcpDc()) {
-                                        std::string waveName = QString(enabledChannelNames[channel] + "|DC").toStdString();
-                                        float *dcWaveform = waveformFifo->getAnalogWaveformPointer(waveName);
-                                        float thisSampleFloat = waveformFifo->getAnalogData(WaveformFifo::ReaderTCP, dcWaveform, i);
+                                        float thisSampleFloat = waveformFifo->getAnalogData(WaveformFifo::ReaderTCP, info.dcWaveform, i);
                                         uint16_t thisSample = round((thisSampleFloat / -0.01923) + 512);
                                         waveformArray.replace(waveformArrayIndex, sizeof(thisSample), (const char*)(&thisSample), sizeof(thisSample));
                                         waveformArrayIndex += sizeof(thisSample);
                                     }
 
                                     if (thisChannel->getOutputToTcpStim()) {
-                                        std::string waveName = QString(enabledChannelNames[channel] + "|STIM").toStdString();
-                                        uint16_t *stimWaveform = waveformFifo->getDigitalWaveformPointer(waveName);
-                                        uint16_t thisSampleUSB = waveformFifo->getDigitalData(WaveformFifo::ReaderTCP, stimWaveform, i);
+                                        uint16_t thisSampleUSB = waveformFifo->getDigitalData(WaveformFifo::ReaderTCP, info.stimWaveform, i);
                                         bool stimPolarityNegative = thisSampleUSB & (1 << 8);
                                         bool stimOn = thisSampleUSB & 1;
                                         uint8_t stimMagnitude;
@@ -217,9 +201,7 @@ void TCPDataOutputThread::run()
                                     if (thisChannel->getOutputToTcp()) {
                                         // Once every 4 samples, aux input actually gets a sample.
                                         if (i % 4 == 0) {
-                                            std::string waveName = QString(enabledChannelNames[channel]).toStdString();
-                                            float *auxWaveform = waveformFifo->getAnalogWaveformPointer(waveName);
-                                            float thisSampleFloat = waveformFifo->getAnalogData(WaveformFifo::ReaderTCP, auxWaveform, i / 4);
+                                            float thisSampleFloat = waveformFifo->getAnalogData(WaveformFifo::ReaderTCP, info.analogWaveform, i / 4);
                                             uint16_t thisSample = round((thisSampleFloat / 37.4e-6));
                                             waveformArray.replace(waveformArrayIndex, sizeof(thisSample), (const char*)(&thisSample), sizeof(thisSample));
                                             waveformArrayIndex += sizeof(thisSample);
@@ -239,9 +221,7 @@ void TCPDataOutputThread::run()
                                     if (thisChannel->getOutputToTcp()) {
                                         // Once every data block, supply voltage actually gets a sample
                                         if (i % FramesPerBlock == 0) {
-                                            std::string waveName = QString(enabledChannelNames[channel]).toStdString();
-                                            float *vddWaveform = waveformFifo->getAnalogWaveformPointer(waveName);
-                                            float thisSampleFloat = waveformFifo->getAnalogData(WaveformFifo::ReaderTCP, vddWaveform, i / FramesPerBlock);
+                                            float thisSampleFloat = waveformFifo->getAnalogData(WaveformFifo::ReaderTCP, info.analogWaveform, i / FramesPerBlock);
                                             uint16_t thisSample = round((thisSampleFloat / 74.8e-6));
                                             waveformArray.replace(waveformArrayIndex, sizeof(thisSample), (const char*)(&thisSample), sizeof(thisSample));
                                             waveformArrayIndex += sizeof(thisSample);
@@ -259,9 +239,7 @@ void TCPDataOutputThread::run()
                                 if (thisChannel->getSignalType() == BoardAdcSignal) {
 
                                     if (thisChannel->getOutputToTcp()) {
-                                        std::string waveName = QString(enabledChannelNames[channel]).toStdString();
-                                        float *adcWaveform = waveformFifo->getAnalogWaveformPointer(waveName);
-                                        float thisSampleFloat = waveformFifo->getAnalogData(WaveformFifo::ReaderTCP, adcWaveform, i);
+                                        float thisSampleFloat = waveformFifo->getAnalogData(WaveformFifo::ReaderTCP, info.analogWaveform, i);
                                         uint16_t thisSample;
                                         if (state->getControllerTypeEnum() == ControllerRecordUSB2) {
                                             thisSample = round(thisSampleFloat / 50.354e-6);
@@ -277,9 +255,7 @@ void TCPDataOutputThread::run()
                                 if (thisChannel->getSignalType() == BoardDacSignal) {
 
                                     if (thisChannel->getOutputToTcp()) {
-                                        std::string waveName = QString(enabledChannelNames[channel]).toStdString();
-                                        float *dacWaveform = waveformFifo->getAnalogWaveformPointer(waveName);
-                                        float thisSampleFloat = waveformFifo->getAnalogData(WaveformFifo::ReaderTCP, dacWaveform, i);
+                                        float thisSampleFloat = waveformFifo->getAnalogData(WaveformFifo::ReaderTCP, info.analogWaveform, i);
                                         uint16_t thisSample = round(thisSampleFloat * 3200) + 32768;
                                         waveformArray.replace(waveformArrayIndex, sizeof(thisSample), (const char*)(&thisSample), sizeof(thisSample));
                                         waveformArrayIndex += sizeof(thisSample);
@@ -478,6 +454,37 @@ void TCPDataOutputThread::updateEnabledChannels()
     spikeArrayIndex = 0;
 
     previousEnabledBands = state->signalSources->getTcpFilterBands();
+
+    // Cache per-channel pointers so the hot frame loop does no map lookups.
+    channelTCPInfos.resize(enabledChannelNames.size());
+    for (int i = 0; i < enabledChannelNames.size(); ++i) {
+        Channel* ch = signalSources->channelByName(enabledChannelNames[i]);
+        std::string name = enabledChannelNames[i].toStdString();
+        ChannelTCPInfo& info = channelTCPInfos[i];
+        info.channel        = ch;
+        info.wideAddress    = {GpuWaveformWideband, -1};
+        info.lowAddress     = {GpuWaveformWideband, -1};
+        info.highAddress    = {GpuWaveformWideband, -1};
+        info.spikeWaveform  = nullptr;
+        info.dcWaveform     = nullptr;
+        info.stimWaveform   = nullptr;
+        info.analogWaveform = nullptr;
+        if (ch->getSignalType() == AmplifierSignal) {
+            if (ch->getOutputToTcp())      info.wideAddress   = waveformFifo->getGpuWaveformAddress(name + "|WIDE");
+            if (ch->getOutputToTcpLow())   info.lowAddress    = waveformFifo->getGpuWaveformAddress(name + "|LOW");
+            if (ch->getOutputToTcpHigh())  info.highAddress   = waveformFifo->getGpuWaveformAddress(name + "|HIGH");
+            if (ch->getOutputToTcpSpike()) info.spikeWaveform = waveformFifo->getDigitalWaveformPointer(name + "|SPK");
+            if (ch->getOutputToTcpDc())    info.dcWaveform    = waveformFifo->getAnalogWaveformPointer(name + "|DC");
+            if (ch->getOutputToTcpStim())  info.stimWaveform  = waveformFifo->getDigitalWaveformPointer(name + "|STIM");
+        } else if (ch->getSignalType() == AuxInputSignal     ||
+                   ch->getSignalType() == SupplyVoltageSignal ||
+                   ch->getSignalType() == BoardAdcSignal     ||
+                   ch->getSignalType() == BoardDacSignal) {
+            info.analogWaveform = waveformFifo->getAnalogWaveformPointer(name);
+        }
+    }
+    cachedDigitalInWaveform  = waveformFifo->getDigitalWaveformPointer("DIGITAL-IN-WORD");
+    cachedDigitalOutWaveform = waveformFifo->getDigitalWaveformPointer("DIGITAL-OUT-WORD");
 
     closeRequested = false;
     closeCompleted = false;

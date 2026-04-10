@@ -103,6 +103,20 @@ private:
     std::vector<uint8_t> posStimAmplitudes;
     std::vector<uint8_t> negStimAmplitudes;
 
+    struct ChannelTCPInfo {
+        Channel* channel;
+        GpuWaveformAddress wideAddress;
+        GpuWaveformAddress lowAddress;
+        GpuWaveformAddress highAddress;
+        uint16_t* spikeWaveform;
+        float*    dcWaveform;
+        uint16_t* stimWaveform;
+        float*    analogWaveform;  // for aux, vdd, adc, dac channels
+    };
+    std::vector<ChannelTCPInfo> channelTCPInfos;
+    uint16_t* cachedDigitalInWaveform;
+    uint16_t* cachedDigitalOutWaveform;
+
     bool closeRequested;
     bool closeCompleted;
 
