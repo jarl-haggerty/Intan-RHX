@@ -64,10 +64,7 @@ jobs:
         copy kernel.cl dist
         copy release\*.exe dist
         copy libraries\Windows\*.dll dist
-        copy "${env:QT_ROOT}\bin\*.dll" dist
-
-        mkdir dist\platforms
-        copy "${env:QT_ROOT}\plugins\platforms\*.dll" dist\platforms
+        windeployqt dist\IntanRHX.exe
   
     - name: Upload Distribution
       uses: actions/upload-artifact@v4
