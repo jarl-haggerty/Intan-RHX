@@ -21,7 +21,10 @@ jobs:
         echo C:\jom >> %GITHUB_PATH%
 
     - name: JOM Test
-      run: jom --help
+      run: |
+        dir C:\jom
+        echo %PATH%
+        jom --help
 
     - name: Install QT
       run: |
