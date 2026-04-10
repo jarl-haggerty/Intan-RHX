@@ -29,7 +29,7 @@ jobs:
     - name: Install QT
       run: |
         curl https://download.qt.io/official_releases/online_installers/qt-online-installer-windows-x64-online.exe -L --output qt-online-installer-windows-x64-online.exe
-        $env:QT_INSTALLER_JWT_TOKEN=${{ secrets.QT_INSTALLER_JWT_TOKEN }}
+        $env:QT_INSTALLER_JWT_TOKEN="${{ secrets.QT_INSTALLER_JWT_TOKEN }}"
         qt-online-installer-windows-x64-4.11.0.exe --root C:\Qt --auto-answer telemetry-question=No --accept-licenses --accept-obligations --confirm-command install qt6-msvc2022-essentials-dev
 
         $qt_root = Resolve-Path C:\Qt\*\msvc2022_64
