@@ -24,7 +24,7 @@ jobs:
       run: |
         dir C:\jom
         echo $env:PATH
-        jom --help
+        jom /?
 
     - name: Install QT
       run: |
