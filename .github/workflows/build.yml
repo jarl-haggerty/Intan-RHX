@@ -42,9 +42,15 @@ jobs:
         qmake --help
         
     - name: Generate
-      run: qmake
+      shell: cmd
+      run: |
+        call "C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Auxiliary\\Build\\vcvars64.bat"
+        qmake
     - name: Build
-      run: jom
+      shell: cmd
+      run: |
+        call "C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Auxiliary\\Build\\vcvars64.bat"
+        jom
 
     - name: Create Distribution
       run: |
