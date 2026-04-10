@@ -1,74 +1,58 @@
 name: Build
 
-on: [push, pull_request]
+on:
+  workflow_dispatch: {}
 
 jobs:
-
-  validate-data:
-    name: Validate Metadata
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v4
-
-    - name: Create Build Environment
-      run: cd contrib/ci/ && podman build -t intanrhx_validate -f ./Dockerfile-debian-testing .
-
-    - name: Validate metainfo
-      run: podman run -t -v `pwd`:/build intanrhx_validate
-           appstreamcli validate --pedantic --explain contrib/com.intantech.intan_rhx.metainfo.xml
-
-    - name: Validate desktop-entry file
-      run: podman run -t -v `pwd`:/build intanrhx_validate
-           desktop-file-validate contrib/com.intantech.intan_rhx.desktop
-
-
-  build-debian:
-    name: Debian Stable
-    runs-on: ubuntu-latest
+  build-windows:
+    name: Windows
+    runs-on: windows-2025
+    environment: ${{ github.ref_name }}
 
     steps:
     - uses: actions/checkout@v4
       with:
         fetch-depth: 0
 
-    - name: Create Build Environment
-      run: cd contrib/ci/ && podman build -t intanrhx -f Dockerfile-debian .
-
-    - name: Build
+    - name: Install JOM
       run: |
-        podman run -t -e CI=true -e DEBEMAIL=no-reply@intantech.com -v `pwd`:/build intanrhx \
-            ./contrib/ci/auto-build-deb.sh
+        curl http://download.qt.io/official_releases/jom/jom.zip -L --output jom.zip
+        powershell -Command "Expand-Archive -DestinationPath C:\jom jom.zip"
+        echo C:\jom >> %GITHUB_PATH%
 
-    - name: Upload Debian package artifact
+    - name: JOM Test
+      run: jom --help
+
+    - name: Install QT
+      run: |
+        curl https://download.qt.io/official_releases/online_installers/qt-online-installer-windows-x64-online.exe -L --output qt-online-installer-windows-x64-online.exe
+        set QT_INSTALLER_JWT_TOKEN=${{ secrets.QT_INSTALLER_JWT_TOKEN }}
+        qt-online-installer-windows-x64-4.11.0.exe --root C:\Qt --auto-answer telemetry-question=No --accept-licenses --accept-obligations --confirm-command install qt6-msvc2022-essentials-dev
+
+        powershell -Command "(Resolve-Path C:\Qt\*\msvc2022_64).Path" > qt-root
+        set /p QT_ROOT=<qt-root
+        echo QT_ROOT=%QT_ROOT% >> %GITHUB_ENV%
+
+        echo %QT_ROOT%\bin >> %GITHUB_PATH%
+        
+    - name: Generate
+      run: qmake
+    - name: Build
+      run: jom
+
+    - name: Create Distribution
+      run: |
+        mkdir dist
+        copy kernel.cl dist
+        copy release\*.exe dist
+        copy libraries\Windows\*.dll dist
+        copy %QT_ROOT%\bin\*.dll dist
+
+        mkdir dist\platforms
+        copy %QT_ROOT%\plugins\platforms dist\platforms
+  
+    - name: Upload Distribution
       uses: actions/upload-artifact@v4
       with:
-        name: Debian Package
-        path: |
-          result/*.deb
-          result/*.build*
-
-
-  build-ubuntu-latest:
-    name: Ubuntu LTS
-    runs-on: ubuntu-latest
-
-    steps:
-    - uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
-
-    - name: Create Build Environment
-      run: cd contrib/ci/ && podman build -t intanrhx -f Dockerfile-ubuntu .
-
-    - name: Build
-      run: |
-        podman run -t -e CI=true -e DEBEMAIL=no-reply@intantech.com -v `pwd`:/build intanrhx \
-            ./contrib/ci/auto-build-deb.sh
-
-    - name: Upload Ubuntu package artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: Ubuntu LTS Package
-        path: |
-          result/*.deb
-          result/*.build*
+        name: windows-dist
+        path: dist
