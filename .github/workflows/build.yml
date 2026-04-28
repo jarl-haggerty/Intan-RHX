@@ -95,8 +95,8 @@ jobs:
         ./qt-online-installer-linux-x64-online.run --root $HOME/qt --auto-answer telemetry-question=No --accept-licenses --accept-obligations --confirm-command install qt6-full-dev
 
         qt_root=`ls -d $HOME/qt/*/gcc_64`
-        echo QT_ROOT=$qt_root >> $env:GITHUB_ENV
-        echo "$qt_root/bin" >> $env:GITHUB_PATH
+        echo QT_ROOT=$qt_root >> $GITHUB_ENV
+        echo "$qt_root/bin" >> $GITHUB_PATH
 
     - name: QT Test
       run: |
