@@ -114,7 +114,7 @@ jobs:
       run: |
         mkdir dist
         cp kernel.cl dist
-        cp release/IntanRHX dist
+        cp IntanRHX dist
         cp libraries/Linux/* dist
   
     - name: Upload Distribution
