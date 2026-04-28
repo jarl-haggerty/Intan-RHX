@@ -84,7 +84,7 @@ jobs:
     - name: Install deps
       run: |
         sudo apt -y update
-        sudo apt -y install qt6-base-dev qt6-multimedia-dev
+        sudo apt -y install qt6-base-dev qt6-multimedia-dev libgl-dev
 
     - name: QT Test
       run: |
