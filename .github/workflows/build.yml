@@ -86,7 +86,8 @@ jobs:
         sudo apt -y update
         sudo apt -y install libxcb-icccm4 libxcb-image0 libxcb-keysyms1 libxcb-render-util0 \
                             libxcb-shape0 libxcb-util1 libxcb-xinput0 libxcb-xkb1 libxkbcommon-x11-0 \
-                            libgl-dev ocl-icd-opencl-dev
+                            libgl-dev libpulse-dev libgl1-mesa-dev libglu1-mesa-dev libegl1-mesa-dev libgles2-mesa-dev ocl-icd-opencl-dev \
+                            libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev libgstreamer-plugins-good1.0-dev
 
     - name: Install QT
       run: |
