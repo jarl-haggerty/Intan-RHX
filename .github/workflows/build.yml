@@ -84,7 +84,7 @@ jobs:
     - name: Install deps
       run: |
         sudo apt -y update
-        sudo apt -y install libxkbcommon-x11-dev
+        sudo apt -y install libxkbcommon-x11-dev libxcb-icccm4-dev
 
     - name: Install QT
       run: |
