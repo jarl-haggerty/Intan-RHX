@@ -298,9 +298,9 @@ SystemState::SystemState(const AbstractRHXController* controller_, StimStepSize 
     writeToLog("Created hardware audio/analog out variables");
 
     // TCP communication
-    tcpCommandCommunicator = new StateTCPCommunicatorItem("TCPCommandSocket", &stateTCPCommunicatorItems, this, "127.0.0.1", 5000, Disconnected);
-    tcpWaveformDataCommunicator = new StateTCPCommunicatorItem("TCPWaveformDataSocket", &stateTCPCommunicatorItems, this, "127.0.0.1", 5001, Disconnected);
-    tcpSpikeDataCommunicator = new StateTCPCommunicatorItem("TCPSpikeDataSocket", &stateTCPCommunicatorItems, this, "127.0.0.1", 5002, Disconnected);
+    tcpCommandCommunicator = new StateTCPCommunicatorItem("TCPCommandSocket", &stateTCPCommunicatorItems, this, "0.0.0.0", 5000, Disconnected);
+    tcpWaveformDataCommunicator = new StateTCPCommunicatorItem("TCPWaveformDataSocket", &stateTCPCommunicatorItems, this, "0.0.0.0", 5001, Disconnected);
+    tcpSpikeDataCommunicator = new StateTCPCommunicatorItem("TCPSpikeDataSocket", &stateTCPCommunicatorItems, this, "0.0.0.0", 5002, Disconnected);
 
     writeToLog("Created tcp communication variables");
 

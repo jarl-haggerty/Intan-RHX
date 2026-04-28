@@ -53,7 +53,7 @@ void TCPCommunicator::establishConnection()
     if (connectionAvailable()) {
         socket = server->nextPendingConnection();
         connect(socket, SIGNAL(readyRead()), this, SLOT(emitReadyRead()));
-        connect(socket, SIGNAL(disconnected()), this, SLOT(returnToDisconnected()));
+        connect(socket, SIGNAL(disconnected()), this, SLOT(handleClientDisconnected()));
         server->close();
         status = Connected;
         emit statusChanged();
@@ -119,7 +119,7 @@ void TCPCommunicator::returnToDisconnected()
         cachedCommands = socket->readAll();
         // Disconnect and destroy socket
         disconnect(socket, SIGNAL(readyRead()), this, SLOT(emitReadyRead()));
-        disconnect(socket, SIGNAL(disconnected()), this, SLOT(returnToDisconnected()));
+        disconnect(socket, SIGNAL(disconnected()), this, SLOT(handleClientDisconnected()));
         socket = nullptr;
     }
     server->close();
@@ -135,6 +135,12 @@ qint64 TCPCommunicator::bytesUnwritten()
 void TCPCommunicator::emitNewConnection()
 {
     emit newConnection();
+}
+
+void TCPCommunicator::handleClientDisconnected()
+{
+    returnToDisconnected();
+    listen();
 }
 
 void TCPCommunicator::emitReadyRead()

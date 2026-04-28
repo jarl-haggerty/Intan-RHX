@@ -68,6 +68,7 @@ public slots:
 private slots:
     void emitNewConnection();
     void emitReadyRead();
+    void handleClientDisconnected();
 
 private:
     QTcpServer *server;
