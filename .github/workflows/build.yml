@@ -86,7 +86,7 @@ jobs:
         sudo apt -y update
         sudo apt -y install libxcb-icccm4 libxcb-image0 libxcb-keysyms1 libxcb-render-util0 \
                             libxcb-shape0 libxcb-util1 libxcb-xinput0 libxcb-xkb1 libxkbcommon-x11-0 \
-                            libgl-dev
+                            libgl-dev ocl-icd-opencl-dev
 
     - name: Install QT
       run: |
