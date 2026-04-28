@@ -88,11 +88,11 @@ jobs:
 
     - name: QT Test
       run: |
-        which qmake
-        qmake --help
+        which qmake6
+        qmake6 --help
         
     - name: Generate
-      run: qmake
+      run: qmake6
     - name: Build
       run: make
 
