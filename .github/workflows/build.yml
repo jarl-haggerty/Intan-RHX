@@ -81,6 +81,11 @@ jobs:
       with:
         fetch-depth: 0
 
+    - name: Install deps
+      run: |
+        sudo apt -y update
+        sudo apt -y install libxkbcommon-x11-dev
+
     - name: Install QT
       run: |
         curl https://download.qt.io/official_releases/online_installers/qt-online-installer-linux-x64-online.run -L --output qt-online-installer-linux-x64-online.run
